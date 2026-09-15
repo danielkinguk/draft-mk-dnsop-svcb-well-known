@@ -78,10 +78,14 @@ retrieve the resource it needs directly after resolution, without probing.
 Each record carries its own list, so a hosted endpoint or an alternative
 protocol can advertise different resources.
 
-DNS for AI Discovery {{I-D.mozleywilliams-dnsop-dnsaid}} is one user of
+The parameter is defined here as a general primitive so that other 
+specifications can reference it.
+
+o DNS for AI Discovery {{I-D.mozleywilliams-dnsop-dnsaid}} is one user of
 this parameter, advertising the location of an agent's capability
-descriptor. The parameter is defined here as a general primitive so that
-other specifications can reference it.
+descriptor.
+
+o [editors note] Authors will add other in progress work. 
 
 ## Requirements Notation
 
@@ -277,9 +281,5 @@ before publication.
 
 4. HTTPBIS review. The designated experts asked for consultation with
    HTTPBIS before a renewed allocation request.
-
-5. DNS-AID alignment. DNS-AID is expected to reference this document in
-   its next revision. Its current examples use full paths and, in one
-   case, a path outside "/.well-known/".
 
 --- back
