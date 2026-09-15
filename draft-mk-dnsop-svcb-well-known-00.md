@@ -15,7 +15,6 @@ keyword:
   - HTTPS
   - well-known
   - service parameter
-  - DNS-AID
 venue:
   group: "Individual Submission"
   type: "Individual"
@@ -34,43 +33,55 @@ normative:
   RFC8174:
   RFC3986:
   RFC5234:
-  RFC7405:
   RFC8615:
   RFC9460:
 informative:
+  RFC4033:
+  RFC9461:
   RFC9727:
   I-D.mozleywilliams-dnsop-dnsaid:
+  A2A:
+    title: Agent2Agent (A2A) Protocol Specification
+    author:
+      - org: Linux Foundation
+    target: https://a2a-protocol.org/latest/specification/
+    date: false
 
 --- abstract
 
-This document proposes the "well-known" Service Parameter Key (SvcParamKey)
+This document defines the "well-known" Service Parameter Key (SvcParamKey)
 for SVCB and HTTPS resource records. It carries one or more well-known URI
-paths, for example the path to an agent's capability descriptor. It defines
-the parameter format and requests its registration with IANA.
+suffixes, identifying resources under "/.well-known/" that are available
+at the service endpoint. It specifies the presentation and wire formats
+and requests registration of the key with IANA.
 
 --- middle
 
 # Introduction
 
-DNS for AI Discovery (DNS-AID) {{I-D.mozleywilliams-dnsop-dnsaid}} uses SVCB
-records {{RFC9460}} to publish agent endpoints. It also uses a "well-known"
-parameter to give the path to a capability descriptor.
+SVCB and HTTPS resource records {{RFC9460}} let a client learn connection
+parameters for a service before connecting, such as the protocols it
+supports and alternative endpoints. They do not say which resources are
+available once connected.
 
-This draft provides a separate definition of that parameter. It carries
-full paths under "/.well-known/" {{RFC8615}}, including sub-paths where
-the well-known registration allows them. Each service binding can advertise
-its own paths. The application defines the resource format and meaning.
+Well-known URIs {{RFC8615}} give machine-readable metadata a conventional
+location under "/.well-known/". The IANA "Well-Known URIs" registry holds
+many such suffixes, for example "api-catalog" {{RFC9727}} and
+"agent-card.json", registered by the Linux Foundation for the Agent2Agent
+protocol {{A2A}}. A client that already knows the applicable suffix can
+construct the URI itself, but it cannot learn from the DNS which of the
+registered resources a particular service offers.
 
-[Discussion Points]
+The "well-known" SvcParamKey closes that gap. A service binding advertises
+the well-known URI suffixes available at its endpoint, so a client can
+retrieve the resource it needs directly after resolution, without probing.
+Each record carries its own list, so a hosted endpoint or an alternative
+protocol can advertise different resources.
 
-1\. Encoding and retrieval rules still need agreement, followed by HTTPBIS review before a renewed allocation request.
-
-2\. Full paths or suffixes? DNS-AID -02 Figure 1 uses
-"agent-card.json" and Section 7.1 assumes the prefix. Figure 3 uses
-"/not-well-known/other-card.json". This draft uses full well-known paths, as in the registration request. These will also need to agree.
-
-3\. The dns-aid-core implementation accepts suffixes and other paths.
-Should we retain that, or require full well-known paths?
+DNS for AI Discovery {{I-D.mozleywilliams-dnsop-dnsaid}} is one user of
+this parameter, advertising the location of an agent's capability
+descriptor. The parameter is defined here as a general primitive so that
+other specifications can reference it.
 
 ## Requirements Notation
 
@@ -82,181 +93,151 @@ as shown here.
 
 # The "well-known" SvcParamKey {#param}
 
-The "well-known" SvcParamKey advertises one or more well-known URI paths
-{{RFC8615}}. A client MAY retrieve a resource at an advertised path. The
-list may not include every resource available at the service.
+The "well-known" SvcParamKey advertises one or more well-known URI
+suffixes {{RFC8615}}, each naming a resource under "/.well-known/" at the
+service endpoint. A client MAY retrieve any advertised resource. The list
+need not include every well-known resource available at the endpoint.
 
 ## Wire Format {#wire}
 
-The wire-format value for the "well-known" SvcParamKey consists of one or more path entries concatenated without separators between entries. Each entry is encoded as:
+The wire-format SvcParamValue consists of one or more entries concatenated
+without separators. Each entry is:
 
-* a 2-octet unsigned length in network byte order, giving the path length
-  in octets; then
+* a 2-octet unsigned length in network byte order, giving the length of
+  the suffix in octets; then
 
-* the path itself.
+* the suffix itself.
 
-[Discussion Points]
-
-4\. Is a two-octet length suitable? Check against existing
-DNS-AID implementations.
-
-5\. The dns-aid-core implementation uses a single string at key65409.
-Any concerns with the proposed list and length encoding?
+A decoder reads entries until the SvcParamValue is exhausted. A value that
+ends inside an entry, or that contains a zero-length entry, does not have
+the expected format, so the RR is malformed (Section 2.2 of {{RFC9460}}).
 
 ## Presentation Format {#presentation}
 
 ~~~
-well-known="path[,path]*"
+well-known="suffix[,suffix]*"
 ~~~
 
-The value is a comma-separated list of one or more paths, using the
+The value is a comma-separated list of one or more suffixes, using the
 character-string and list escaping rules of Section 2.1 and Appendix A.1
-of {{RFC9460}}. Empty items and whitespace around separators are not allowed.
+of {{RFC9460}}. Empty items and whitespace around separators are not
+allowed.
 
-Each decoded path MUST match this ABNF {{RFC5234}} {{RFC7405}}:
+Each decoded suffix MUST match this ABNF {{RFC5234}}:
 
 ~~~
-wk-path = %s"/.well-known/" segment-nz *( "/" segment )
+wk-suffix = segment-nz *( "/" segment )
 ~~~
 
-The segment-nz and segment rules are from Section 3.3 of {{RFC3986}}.
-Sub-paths are permitted where the well-known registration allows them
-{{RFC8615}}. The value carries paths only; see {{resolving}} for the origin.
+The segment-nz and segment rules are from Section 3.3 of {{RFC3986}}. A
+suffix does not begin with "/", does not include the "/.well-known/"
+prefix, and carries no query or fragment component. A suffix may extend
+below a registered well-known name where that registration allows it.
 
 Non-ASCII characters MUST be percent-encoded. Invalid percent escapes and
 segments equal to "." or "..", including their percent-encoded forms,
 MUST be rejected. Other percent-encoded octets MUST be preserved without
-decoding or normalisation.
+decoding or normalisation. A value containing a suffix that fails these
+checks does not have the expected format, so the RR is malformed.
 
-Each decoded path is encoded as a length-prefixed entry ({{wire}}).
-Conversion in either direction MUST preserve path octets and list order,
-using the RFC 9460 escaping rules for presentation output.
+Each decoded suffix is encoded as one length-prefixed entry ({{wire}}).
+Conversion in either direction MUST preserve suffix octets and list order,
+using the {{RFC9460}} escaping rules for presentation output.
 
 ## Examples {#examples}
 
-The examples below use the requested mnemonic for illustration; no
-allocation is implied, and the well-known names shown are not registered by
-this document.
-
-[Discussion Points]
-
-6\. Check the DNS-AID ALPN examples. Are "a2a" and "mcp" TLS
-ALPN identifiers, or labels for protocols over HTTP?
-
-Should we use HTTP ALPN values here if that is clearer?
+The examples use the requested key name for illustration; no allocation is
+implied.
 
 ~~~
-agent-name.example.com. 3600 IN SVCB 1 . (
-    alpn="a2a,h2"
-    well-known="/.well-known/agent-card.json"
+svc.example.com. 3600 IN HTTPS 1 . (
+    alpn="h2,h3"
+    well-known="api-catalog"
 )
-agent-name.example.com. 3600 IN SVCB 1 host.provider.example (
-    alpn="mcp,h2,h3"
-    well-known="/.well-known/agent-card.json,/.well-known/api-catalog"
+agent.example.com. 3600 IN SVCB 1 host.provider.example (
+    alpn="h2,h3"
+    well-known="agent-card.json,api-catalog"
 )
 ~~~
 
-The api-catalog path is defined in {{RFC9727}}.
-
-The first record advertises one path at the owner name. The second, with a
-hosted TargetName, advertises two paths at that host. Their "well-known"
-SvcParamValues are, respectively, the first entry below and both entries
-concatenated:
-
-~~~
-00 1c | ASCII("/.well-known/agent-card.json")
-00 18 | ASCII("/.well-known/api-catalog")
-~~~
-
-The path lengths are 28 and 24 octets; the values are 30 and 56 octets.
-The following single-path value contains a literal comma:
+The first record advertises one resource at the owner name,
+"https://svc.example.com/.well-known/api-catalog". The second, with a
+hosted TargetName, advertises two resources at that host. Their wire-format
+SvcParamValues are, respectively, the first entry below and the second
+and third entries concatenated:
 
 ~~~
-well-known="/.well-known/foo/a\\,b"
+00 0b | ASCII("api-catalog")
+00 0f | ASCII("agent-card.json")
+00 0b | ASCII("api-catalog")
 ~~~
 
-Character-string decoding produces "/.well-known/foo/a\,b"; list decoding
-produces "/.well-known/foo/a,b". Its wire value is:
+The suffix lengths are 11 and 15 octets; the two values are 13 and 30
+octets. The following single-suffix value contains a literal comma:
 
 ~~~
-00 14 | ASCII("/.well-known/foo/a,b")
+well-known="foo/a\\,b"
+~~~
+
+Character-string decoding produces "foo/a\,b"; list decoding produces
+"foo/a,b". Its wire value is:
+
+~~~
+00 07 | ASCII("foo/a,b")
 ~~~
 
 # Interactions with Other SvcParamKeys
 
-The "well-known" key MAY appear alongside "alpn", "ipv4hint", "ipv6hint",
-and "port". See {{resolving}} for the use of the port.
+The "well-known" key MAY appear alongside any other SvcParamKey. The
+"alpn" key selects the protocol used to retrieve a resource; the "port"
+key and the TargetName affect the origin ({{resolving}}).
 
-[Discussion Points]
-
-7\. Does DNS-AID use "port" for the descriptor URI too? For
-HTTPS records it changes the connection port, not the origin.
-
-8\. Descriptor retrieval in dns-aid-core currently uses port 443.
-Should it use the SVCB port?
-
-9\. If both "cap" and "well-known" are present, which takes precedence?
-
-The "well-known" key MUST be ignored when it appears in an AliasMode SVCB
-record.
-
-Each ServiceMode record carries its own "well-known" value.
+Each ServiceMode record carries its own "well-known" value. The key MUST
+be ignored when it appears in an AliasMode record.
 
 If "well-known" is listed in "mandatory", a client that does not implement
-it MUST skip the record (Section 8 of {{RFC9460}}). This does not require
-the client to retrieve every path.
+it MUST skip the record (Section 8 of {{RFC9460}}). This does not oblige a
+client to retrieve any advertised resource.
 
-# Resolving and Retrieving Advertised Paths {#resolving}
+# Resolving and Retrieving Advertised Resources {#resolving}
 
-The origin against which an advertised path is resolved is not yet agreed.
-For HTTPS records, Section 9 of {{RFC9460}} keeps the origin of the URI
-being resolved. For SVCB records, the candidate is an "https" origin at
-the TargetName (or the owner name when TargetName is "."), using the
-"port" key or 443.
+A client forms the URI of an advertised resource by appending
+"/.well-known/" and the suffix to the origin of the service.
 
-[Discussion Points]
-
-10\. Original agent name or TargetName for the descriptor?
-Also check TLSA lookup: DNS-AID -02 Section 3.2 uses TargetName;
-Section 6.2 uses `_443._tcp.<owner>`.
-Need to cover aliases, hosted agents and other ports/transports.
-
-11\. Can the descriptor use a different host or port from the agent service?
-
-12\. With several paths, which resource does "cap-sha256" cover?
-Does DNS-AID need just one descriptor path for now?
+For HTTPS records, the origin is that of the URI being resolved, as in
+Section 9 of {{RFC9460}}; the "port" key changes the connection port, not
+the origin. For SVCB records, the specification that maps the service to
+SVCB defines the scheme and authority. Where it does not, the origin is
+"https" at the TargetName (or the owner name when TargetName is "."),
+using the "port" key or 443.
 
 # Security Considerations
 
 The security and privacy considerations of {{RFC9460}} and {{RFC8615}}
-apply. The "well-known" parameter is conveyed in the DNS and is subject to
-the same integrity guarantees as the enclosing SVCB record. 
+apply. The "well-known" parameter is conveyed in the DNS and has the same
+integrity properties as the enclosing record.
 
-Publishers SHOULD sign records carrying this key with DNSSEC, as DNS-AID recommends,
-so that a validating client can detect alteration.
+The value is free text. It is deliberately not constrained to the suffixes
+in the IANA "Well-Known URIs" registry: an enumerated encoding would
+require DNS software to change each time a suffix is registered, and
+neither authoritative servers nor resolvers are positioned to validate it.
+A publisher, or an attacker able to alter records, can therefore advertise
+any string. Clients MUST treat an advertised suffix as metadata, not as a
+trust signal. A suffix that is well formed, or even registered, implies
+nothing about whether a resource exists at that location or whether its
+contents are trustworthy. A client MUST NOT relax endpoint authentication,
+destination restrictions, or redirect policy because a suffix was
+advertised in the DNS.
 
-A client MUST NOT relax endpoint authentication, destination restrictions,
-or redirect policy because a path was advertised in the DNS.
-
-[Discussion Points]
-
-13\. If TargetName changes the origin, how do we know that host
-is authorised to represent the agent?
-
-14\. Its certificate alone does not establish this. Need to cover operation without DNSSEC validation.
-
-15\. Should DNS-AID use the same authorisation rules for hosted descriptors
-as for off-domain catalogue pointers?
+Publishers MAY sign records carrying this key with DNSSEC {{RFC4033}}.
+DNSSEC lets a validating client confirm that the record was published by
+the zone's authoritative source and was not altered in transit. It does
+not validate the suffix or the resource it names.
 
 Forged or hostile advertisements can induce unwanted requests or disclose
 client interests. Implementations SHOULD bound retrieval work rather than
-automatically fetch every advertised path. Publishing paths can also
-disclose information about a service; publishers SHOULD keep advertisements
-compact.
-
-DNSSEC can authenticate publication of a path; it does not establish that
-the resource at that path, or its contents, are trustworthy. Consumers MUST
-treat an advertised path as metadata, not as a trust signal.
+fetch every advertised resource. Publishing suffixes discloses information
+about a service; publishers SHOULD keep advertisements compact.
 
 # IANA Considerations
 
@@ -266,13 +247,39 @@ group, per the procedure defined in Section 14.3 of {{RFC9460}}:
 
 | Number | Name | Meaning | Format Reference | Change Controller |
 | --- | --- | --- | --- | --- |
-| TBD | well-known | One or more well-known URI paths available at the service endpoint | (This document) | IETF |
+| TBD | well-known | One or more well-known URI suffixes available at the service endpoint | (This document) | IETF |
 
 This request does not register individual well-known URI suffixes. Testing
 before allocation can use the private-use SvcParamKey range of {{RFC9460}}.
 
-[Discussion Points]
+# Open Issues
+{:removeinrfc="true"}
 
-16\. Update DNS-AID Section 7.1 to reference this definition once agreed.
+This section lists questions on which the authors seek input, in
+particular from the DNSOP and HTTPBIS working groups. It will be removed
+before publication.
+
+1. Suffix-only values. This document carries the suffix without the
+   "/.well-known/" prefix, matching the IANA registry and saving octets.
+   The original registration request and the current DNS-AID draft use
+   full paths.
+
+2. Origin for SVCB records. The default of an "https" origin at the
+   TargetName is a proposal. Whether the owner name or the TargetName
+   should be used, and how a client knows that a hosted TargetName is
+   authorised to serve resources for the service, remain open.
+
+3. Wire encoding. A list of length-prefixed entries is proposed, as used
+   by other list-valued SvcParamKeys. An existing DNS-AID implementation
+   carries a single string at a private-use key. Implementer input is
+   welcome. The "dohpath" key {{RFC9461}} is the existing precedent for
+   a path-valued parameter.
+
+4. HTTPBIS review. The designated experts asked for consultation with
+   HTTPBIS before a renewed allocation request.
+
+5. DNS-AID alignment. DNS-AID is expected to reference this document in
+   its next revision. Its current examples use full paths and, in one
+   case, a path outside "/.well-known/".
 
 --- back
