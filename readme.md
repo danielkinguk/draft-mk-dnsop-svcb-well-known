@@ -24,7 +24,7 @@ resolves an advertised path. The application defines what is at each path.
 ## Authors
 
 - Jim Mozley, Infoblox, Inc.
-- Daniel King, Lancaster University
+- Daniel King, Old Dog Consulting
 
 [RFC 9460]: https://www.rfc-editor.org/rfc/rfc9460
 [RFC 8615]: https://www.rfc-editor.org/rfc/rfc8615
