@@ -26,8 +26,8 @@ author:
     email: "jmozley@infoblox.com"
   -
     name: Daniel King
-    org: Lancaster University
-    email: "d.king@lancaster.ac.uk"
+    org: Old Dog Consulting
+    email: "daniel@olddog.co.uk"
 normative:
   RFC2119:
   RFC8174:
