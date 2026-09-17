@@ -75,17 +75,17 @@ registered resources a particular service offers.
 The "well-known" SvcParamKey closes that gap. A service binding advertises
 the well-known URI suffixes available at its endpoint, so a client can
 retrieve the resource it needs directly after resolution, without probing.
-Each record carries its own list, so a hosted endpoint or an alternative
-protocol can advertise different resources.
+Each DNS record in an RRset carries its own list, so a hosted endpoint or
+an alternative protocol can advertise different resources.
 
-The parameter is defined here as a general primitive so that other 
+The service parameter is defined here as a general primitive so that other
 specifications can reference it.
 
 o DNS for AI Discovery {{I-D.mozleywilliams-dnsop-dnsaid}} is one user of
 this parameter, advertising the location of an agent's capability
 descriptor.
 
-o [editors note] Authors will add other in progress work. 
+o [editors note] Authors will add other in progress work.
 
 ## Requirements Notation
 
@@ -234,7 +234,7 @@ destination restrictions, or redirect policy because a suffix was
 advertised in the DNS.
 
 Publishers MAY sign records carrying this key with DNSSEC {{RFC4033}}.
-DNSSEC lets a validating client confirm that the record was published by
+DNSSEC lets a validating resolver confirm that the record was published by
 the zone's authoritative source and was not altered in transit. It does
 not validate the suffix or the resource it names.
 
@@ -268,18 +268,13 @@ before publication.
    The original registration request and the current DNS-AID draft use
    full paths.
 
-2. Origin for SVCB records. The default of an "https" origin at the
-   TargetName is a proposal. Whether the owner name or the TargetName
-   should be used, and how a client knows that a hosted TargetName is
-   authorised to serve resources for the service, remain open.
-
-3. Wire encoding. A list of length-prefixed entries is proposed, as used
+2. Wire encoding. A list of length-prefixed entries is proposed, as used
    by other list-valued SvcParamKeys. An existing DNS-AID implementation
    carries a single string at a private-use key. Implementer input is
    welcome. The "dohpath" key {{RFC9461}} is the existing precedent for
-   a path-valued parameter.
+   a path-valued parameter, but this key is single valued.
 
-4. HTTPBIS review. The designated experts asked for consultation with
+3. HTTPBIS review. The designated experts asked for consultation with
    HTTPBIS before a renewed allocation request.
 
 --- back

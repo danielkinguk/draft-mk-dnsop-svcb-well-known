@@ -1,0 +1,504 @@
+
+
+
+
+Individual Submission                                          J. Mozley
+Internet-Draft                                            Infoblox, Inc.
+Intended status: Standards Track                                 D. King
+Expires: 20 March 2027                                Old Dog Consulting
+                                                       16 September 2026
+
+
+           An SVCB Service Parameter for Well-Known URI Paths
+                   draft-mk-dnsop-svcb-well-known-00
+
+Abstract
+
+   This document defines the "well-known" Service Parameter Key
+   (SvcParamKey) for SVCB and HTTPS resource records.  It carries one or
+   more well-known URI suffixes, identifying resources under "/.well-
+   known/" that are available at the service endpoint.  It specifies the
+   presentation and wire formats and requests registration of the key
+   with IANA.
+
+About This Document
+
+   This note is to be removed before publishing as an RFC.
+
+   Status information for this document may be found at
+   https://datatracker.ietf.org/doc/draft-mk-dnsop-svcb-well-known/.
+
+   Discussion of this document takes place on the Individual Submission
+   Individual mailing list (mailto:dnsop@ietf.org), which is archived at
+   https://mailarchive.ietf.org/arch/browse/dnsop/.  Subscribe at
+   https://www.ietf.org/mailman/listinfo/dnsop/.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 20 March 2027.
+
+
+
+
+Mozley & King             Expires 20 March 2027                 [Page 1]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
+Copyright Notice
+
+   Copyright (c) 2026 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
+     1.1.  Requirements Notation . . . . . . . . . . . . . . . . . .   3
+   2.  The "well-known" SvcParamKey  . . . . . . . . . . . . . . . .   3
+     2.1.  Wire Format . . . . . . . . . . . . . . . . . . . . . . .   3
+     2.2.  Presentation Format . . . . . . . . . . . . . . . . . . .   4
+     2.3.  Examples  . . . . . . . . . . . . . . . . . . . . . . . .   4
+   3.  Interactions with Other SvcParamKeys  . . . . . . . . . . . .   5
+   4.  Resolving and Retrieving Advertised Resources . . . . . . . .   5
+   5.  Security Considerations . . . . . . . . . . . . . . . . . . .   6
+   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   6
+   7.  Open Issues . . . . . . . . . . . . . . . . . . . . . . . . .   7
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   7
+     8.1.  Normative References  . . . . . . . . . . . . . . . . . .   7
+     8.2.  Informative References  . . . . . . . . . . . . . . . . .   8
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   9
+
+1.  Introduction
+
+   SVCB and HTTPS resource records [RFC9460] let a client learn
+   connection parameters for a service before connecting, such as the
+   protocols it supports and alternative endpoints.  They do not say
+   which resources are available once connected.
+
+   Well-known URIs [RFC8615] give machine-readable metadata a
+   conventional location under "/.well-known/".  The IANA "Well-Known
+   URIs" registry holds many such suffixes, for example "api-catalog"
+   [RFC9727] and "agent-card.json", registered by the Linux Foundation
+   for the Agent2Agent protocol [A2A].  A client that already knows the
+   applicable suffix can construct the URI itself, but it cannot learn
+   from the DNS which of the registered resources a particular service
+   offers.
+
+
+
+
+Mozley & King             Expires 20 March 2027                 [Page 2]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
+   The "well-known" SvcParamKey closes that gap.  A service binding
+   advertises the well-known URI suffixes available at its endpoint, so
+   a client can retrieve the resource it needs directly after
+   resolution, without probing.  Each DNS record in an RRset carries its
+   own list, so a hosted endpoint or an alternative protocol can
+   advertise different resources.
+
+   The service parameter is defined here as a general primitive so that
+   other specifications can reference it.
+
+   o DNS for AI Discovery [I-D.mozleywilliams-dnsop-dnsaid] is one user
+   of this parameter, advertising the location of an agent's capability
+   descriptor.
+
+   o [editors note] Authors will add other in progress work.
+
+1.1.  Requirements Notation
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+2.  The "well-known" SvcParamKey
+
+   The "well-known" SvcParamKey advertises one or more well-known URI
+   suffixes [RFC8615], each naming a resource under "/.well-known/" at
+   the service endpoint.  A client MAY retrieve any advertised resource.
+   The list need not include every well-known resource available at the
+   endpoint.
+
+2.1.  Wire Format
+
+   The wire-format SvcParamValue consists of one or more entries
+   concatenated without separators.  Each entry is:
+
+   *  a 2-octet unsigned length in network byte order, giving the length
+      of the suffix in octets; then
+
+   *  the suffix itself.
+
+   A decoder reads entries until the SvcParamValue is exhausted.  A
+   value that ends inside an entry, or that contains a zero-length
+   entry, does not have the expected format, so the RR is malformed
+   (Section 2.2 of [RFC9460]).
+
+
+
+
+
+Mozley & King             Expires 20 March 2027                 [Page 3]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
+2.2.  Presentation Format
+
+   well-known="suffix[,suffix]*"
+
+   The value is a comma-separated list of one or more suffixes, using
+   the character-string and list escaping rules of Section 2.1 and
+   Appendix A.1 of [RFC9460].  Empty items and whitespace around
+   separators are not allowed.
+
+   Each decoded suffix MUST match this ABNF [RFC5234]:
+
+   wk-suffix = segment-nz *( "/" segment )
+
+   The segment-nz and segment rules are from Section 3.3 of [RFC3986].
+   A suffix does not begin with "/", does not include the "/.well-
+   known/" prefix, and carries no query or fragment component.  A suffix
+   may extend below a registered well-known name where that registration
+   allows it.
+
+   Non-ASCII characters MUST be percent-encoded.  Invalid percent
+   escapes and segments equal to "." or "..", including their percent-
+   encoded forms, MUST be rejected.  Other percent-encoded octets MUST
+   be preserved without decoding or normalisation.  A value containing a
+   suffix that fails these checks does not have the expected format, so
+   the RR is malformed.
+
+   Each decoded suffix is encoded as one length-prefixed entry
+   (Section 2.1).  Conversion in either direction MUST preserve suffix
+   octets and list order, using the [RFC9460] escaping rules for
+   presentation output.
+
+2.3.  Examples
+
+   The examples use the requested key name for illustration; no
+   allocation is implied.
+
+   svc.example.com. 3600 IN HTTPS 1 . (
+       alpn="h2,h3"
+       well-known="api-catalog"
+   )
+   agent.example.com. 3600 IN SVCB 1 host.provider.example (
+       alpn="h2,h3"
+       well-known="agent-card.json,api-catalog"
+   )
+
+
+
+
+
+
+
+Mozley & King             Expires 20 March 2027                 [Page 4]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
+   The first record advertises one resource at the owner name,
+   "https://svc.example.com/.well-known/api-catalog".  The second, with
+   a hosted TargetName, advertises two resources at that host.  Their
+   wire-format SvcParamValues are, respectively, the first entry below
+   and the second and third entries concatenated:
+
+   00 0b | ASCII("api-catalog")
+   00 0f | ASCII("agent-card.json")
+   00 0b | ASCII("api-catalog")
+
+   The suffix lengths are 11 and 15 octets; the two values are 13 and 30
+   octets.  The following single-suffix value contains a literal comma:
+
+   well-known="foo/a\\,b"
+
+   Character-string decoding produces "foo/a\,b"; list decoding produces
+   "foo/a,b".  Its wire value is:
+
+   00 07 | ASCII("foo/a,b")
+
+3.  Interactions with Other SvcParamKeys
+
+   The "well-known" key MAY appear alongside any other SvcParamKey.  The
+   "alpn" key selects the protocol used to retrieve a resource; the
+   "port" key and the TargetName affect the origin (Section 4).
+
+   Each ServiceMode record carries its own "well-known" value.  The key
+   MUST be ignored when it appears in an AliasMode record.
+
+   If "well-known" is listed in "mandatory", a client that does not
+   implement it MUST skip the record (Section 8 of [RFC9460]).  This
+   does not oblige a client to retrieve any advertised resource.
+
+4.  Resolving and Retrieving Advertised Resources
+
+   A client forms the URI of an advertised resource by appending
+   "/.well-known/" and the suffix to the origin of the service.
+
+   For HTTPS records, the origin is that of the URI being resolved, as
+   in Section 9 of [RFC9460]; the "port" key changes the connection
+   port, not the origin.  For SVCB records, the specification that maps
+   the service to SVCB defines the scheme and authority.  Where it does
+   not, the origin is "https" at the TargetName (or the owner name when
+   TargetName is "."), using the "port" key or 443.
+
+
+
+
+
+
+
+Mozley & King             Expires 20 March 2027                 [Page 5]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
+5.  Security Considerations
+
+   The security and privacy considerations of [RFC9460] and [RFC8615]
+   apply.  The "well-known" parameter is conveyed in the DNS and has the
+   same integrity properties as the enclosing record.
+
+   The value is free text.  It is deliberately not constrained to the
+   suffixes in the IANA "Well-Known URIs" registry: an enumerated
+   encoding would require DNS software to change each time a suffix is
+   registered, and neither authoritative servers nor resolvers are
+   positioned to validate it.  A publisher, or an attacker able to alter
+   records, can therefore advertise any string.  Clients MUST treat an
+   advertised suffix as metadata, not as a trust signal.  A suffix that
+   is well formed, or even registered, implies nothing about whether a
+   resource exists at that location or whether its contents are
+   trustworthy.  A client MUST NOT relax endpoint authentication,
+   destination restrictions, or redirect policy because a suffix was
+   advertised in the DNS.
+
+   Publishers MAY sign records carrying this key with DNSSEC [RFC4033].
+   DNSSEC lets a validating resolver confirm that the record was
+   published by the zone's authoritative source and was not altered in
+   transit.  It does not validate the suffix or the resource it names.
+
+   Forged or hostile advertisements can induce unwanted requests or
+   disclose client interests.  Implementations SHOULD bound retrieval
+   work rather than fetch every advertised resource.  Publishing
+   suffixes discloses information about a service; publishers SHOULD
+   keep advertisements compact.
+
+6.  IANA Considerations
+
+   IANA is requested to add the following entry to the "Service
+   Parameter Keys (SvcParamKeys)" registry, in the "DNS Service Bindings
+   (SVCB)" registry group, per the procedure defined in Section 14.3 of
+   [RFC9460]:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Mozley & King             Expires 20 March 2027                 [Page 6]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
+   +========+============+====================+===========+============+
+   | Number | Name       | Meaning            | Format    | Change     |
+   |        |            |                    | Reference | Controller |
+   +========+============+====================+===========+============+
+   | TBD    | well-known | One or more        | (This     | IETF       |
+   |        |            | well-known URI     | document) |            |
+   |        |            | suffixes           |           |            |
+   |        |            | available at the   |           |            |
+   |        |            | service endpoint   |           |            |
+   +--------+------------+--------------------+-----------+------------+
+
+                                  Table 1
+
+   This request does not register individual well-known URI suffixes.
+   Testing before allocation can use the private-use SvcParamKey range
+   of [RFC9460].
+
+7.  Open Issues
+
+   This section is to be removed before publishing as an RFC.
+
+   This section lists questions on which the authors seek input, in
+   particular from the DNSOP and HTTPBIS working groups.  It will be
+   removed before publication.
+
+   1.  Suffix-only values.  This document carries the suffix without the
+       "/.well-known/" prefix, matching the IANA registry and saving
+       octets.  The original registration request and the current DNS-
+       AID draft use full paths.
+
+   2.  Wire encoding.  A list of length-prefixed entries is proposed, as
+       used by other list-valued SvcParamKeys.  An existing DNS-AID
+       implementation carries a single string at a private-use key.
+       Implementer input is welcome.  The "dohpath" key [RFC9461] is the
+       existing precedent for a path-valued parameter, but this key is
+       single valued.
+
+   3.  HTTPBIS review.  The designated experts asked for consultation
+       with HTTPBIS before a renewed allocation request.
+
+8.  References
+
+8.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/rfc/rfc2119>.
+
+
+
+Mozley & King             Expires 20 March 2027                 [Page 7]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
+   [RFC3986]  Berners-Lee, T., Fielding, R., and L. Masinter, "Uniform
+              Resource Identifier (URI): Generic Syntax", STD 66,
+              RFC 3986, DOI 10.17487/RFC3986, January 2005,
+              <https://www.rfc-editor.org/rfc/rfc3986>.
+
+   [RFC5234]  Crocker, D., Ed. and P. Overell, "Augmented BNF for Syntax
+              Specifications: ABNF", STD 68, RFC 5234,
+              DOI 10.17487/RFC5234, January 2008,
+              <https://www.rfc-editor.org/rfc/rfc5234>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
+
+   [RFC8615]  Nottingham, M., "Well-Known Uniform Resource Identifiers
+              (URIs)", RFC 8615, DOI 10.17487/RFC8615, May 2019,
+              <https://www.rfc-editor.org/rfc/rfc8615>.
+
+   [RFC9460]  Schwartz, B., Bishop, M., and E. Nygren, "Service Binding
+              and Parameter Specification via the DNS (SVCB and HTTPS
+              Resource Records)", RFC 9460, DOI 10.17487/RFC9460,
+              November 2023, <https://www.rfc-editor.org/rfc/rfc9460>.
+
+8.2.  Informative References
+
+   [A2A]      Linux Foundation, "Agent2Agent (A2A) Protocol
+              Specification",
+              <https://a2a-protocol.org/latest/specification/>.
+
+   [I-D.mozleywilliams-dnsop-dnsaid]
+              Mozley, J., Williams, N., Sarikaya, B., Schott, R., and J.
+              Damick, "DNS for AI Discovery", Work in Progress,
+              Internet-Draft, draft-mozleywilliams-dnsop-dnsaid-02, 27
+              May 2026, <https://datatracker.ietf.org/doc/html/draft-
+              mozleywilliams-dnsop-dnsaid-02>.
+
+   [RFC4033]  Arends, R., Austein, R., Larson, M., Massey, D., and S.
+              Rose, "DNS Security Introduction and Requirements",
+              RFC 4033, DOI 10.17487/RFC4033, March 2005,
+              <https://www.rfc-editor.org/rfc/rfc4033>.
+
+   [RFC9461]  Schwartz, B., "Service Binding Mapping for DNS Servers",
+              RFC 9461, DOI 10.17487/RFC9461, November 2023,
+              <https://www.rfc-editor.org/rfc/rfc9461>.
+
+
+
+
+
+
+
+Mozley & King             Expires 20 March 2027                 [Page 8]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
+   [RFC9727]  Smith, K., "api-catalog: A Well-Known URI and Link
+              Relation to Help Discovery of APIs", RFC 9727,
+              DOI 10.17487/RFC9727, June 2025,
+              <https://www.rfc-editor.org/rfc/rfc9727>.
+
+Authors' Addresses
+
+   Jim Mozley
+   Infoblox, Inc.
+   Email: jmozley@infoblox.com
+
+
+   Daniel King
+   Old Dog Consulting
+   Email: daniel@olddog.co.uk
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Mozley & King             Expires 20 March 2027                 [Page 9]
