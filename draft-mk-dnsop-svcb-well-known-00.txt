@@ -5,8 +5,8 @@
 Individual Submission                                          J. Mozley
 Internet-Draft                                            Infoblox, Inc.
 Intended status: Standards Track                                 D. King
-Expires: 20 March 2027                                Old Dog Consulting
-                                                       16 September 2026
+Expires: 28 March 2027                                Old Dog Consulting
+                                                       24 September 2026
 
 
            An SVCB Service Parameter for Well-Known URI Paths
@@ -48,12 +48,12 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 20 March 2027.
+   This Internet-Draft will expire on 28 March 2027.
 
 
 
 
-Mozley & King             Expires 20 March 2027                 [Page 1]
+Mozley & King             Expires 28 March 2027                 [Page 1]
 
 Internet-Draft         SVCB well-known SvcParamKey        September 2026
 
@@ -109,7 +109,7 @@ Table of Contents
 
 
 
-Mozley & King             Expires 20 March 2027                 [Page 2]
+Mozley & King             Expires 28 March 2027                 [Page 2]
 
 Internet-Draft         SVCB well-known SvcParamKey        September 2026
 
@@ -119,7 +119,14 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
    a client can retrieve the resource it needs directly after
    resolution, without probing.  Each DNS record in an RRset carries its
    own list, so a hosted endpoint or an alternative protocol can
-   advertise different resources.
+   advertise different resources.  This facilitates allowing entities
+   establishing connections to network services to use the SvcParamValue
+   in making connectivity decisions by indicating available resources.
+
+   As protocols such as [A2A] can use different transport, or
+   implementors may create custom protocol bindings to support different
+   transport mechanisms or communication patterns, having "well-known"
+   as an SvcParamKey supports this usage.
 
    The service parameter is defined here as a general primitive so that
    other specifications can reference it.
@@ -156,19 +163,17 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
 
    *  the suffix itself.
 
+
+
+Mozley & King             Expires 28 March 2027                 [Page 3]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
    A decoder reads entries until the SvcParamValue is exhausted.  A
    value that ends inside an entry, or that contains a zero-length
    entry, does not have the expected format, so the RR is malformed
    (Section 2.2 of [RFC9460]).
-
-
-
-
-
-Mozley & King             Expires 20 March 2027                 [Page 3]
-
-Internet-Draft         SVCB well-known SvcParamKey        September 2026
-
 
 2.2.  Presentation Format
 
@@ -177,7 +182,8 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
    The value is a comma-separated list of one or more suffixes, using
    the character-string and list escaping rules of Section 2.1 and
    Appendix A.1 of [RFC9460].  Empty items and whitespace around
-   separators are not allowed.
+   separators are not allowed.  A suffix MUST only appear once in the
+   list.
 
    Each decoded suffix MUST match this ABNF [RFC5234]:
 
@@ -187,7 +193,7 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
    A suffix does not begin with "/", does not include the "/.well-
    known/" prefix, and carries no query or fragment component.  A suffix
    may extend below a registered well-known name where that registration
-   allows it.
+   allows it, such as [RFC7711].
 
    Non-ASCII characters MUST be percent-encoded.  Invalid percent
    escapes and segments equal to "." or "..", including their percent-
@@ -206,6 +212,20 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
    The examples use the requested key name for illustration; no
    allocation is implied.
 
+
+
+
+
+
+
+
+
+
+Mozley & King             Expires 28 March 2027                 [Page 4]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
    svc.example.com. 3600 IN HTTPS 1 . (
        alpn="h2,h3"
        well-known="api-catalog"
@@ -214,17 +234,6 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
        alpn="h2,h3"
        well-known="agent-card.json,api-catalog"
    )
-
-
-
-
-
-
-
-Mozley & King             Expires 20 March 2027                 [Page 4]
-
-Internet-Draft         SVCB well-known SvcParamKey        September 2026
-
 
    The first record advertises one resource at the owner name,
    "https://svc.example.com/.well-known/api-catalog".  The second, with
@@ -264,23 +273,21 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
    A client forms the URI of an advertised resource by appending
    "/.well-known/" and the suffix to the origin of the service.
 
+
+
+
+
+Mozley & King             Expires 28 March 2027                 [Page 5]
+
+Internet-Draft         SVCB well-known SvcParamKey        September 2026
+
+
    For HTTPS records, the origin is that of the URI being resolved, as
    in Section 9 of [RFC9460]; the "port" key changes the connection
    port, not the origin.  For SVCB records, the specification that maps
    the service to SVCB defines the scheme and authority.  Where it does
    not, the origin is "https" at the TargetName (or the owner name when
    TargetName is "."), using the "port" key or 443.
-
-
-
-
-
-
-
-Mozley & King             Expires 20 March 2027                 [Page 5]
-
-Internet-Draft         SVCB well-known SvcParamKey        September 2026
-
 
 5.  Security Considerations
 
@@ -309,8 +316,9 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
    Forged or hostile advertisements can induce unwanted requests or
    disclose client interests.  Implementations SHOULD bound retrieval
    work rather than fetch every advertised resource.  Publishing
-   suffixes discloses information about a service; publishers SHOULD
-   keep advertisements compact.
+   suffixes disclose information about a service; publishers SHOULD keep
+   advertisements compact and related to making connections to network
+   services.
 
 6.  IANA Considerations
 
@@ -325,15 +333,7 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
 
 
 
-
-
-
-
-
-
-
-
-Mozley & King             Expires 20 March 2027                 [Page 6]
+Mozley & King             Expires 28 March 2027                 [Page 6]
 
 Internet-Draft         SVCB well-known SvcParamKey        September 2026
 
@@ -389,7 +389,7 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
 
 
 
-Mozley & King             Expires 20 March 2027                 [Page 7]
+Mozley & King             Expires 28 March 2027                 [Page 7]
 
 Internet-Draft         SVCB well-known SvcParamKey        September 2026
 
@@ -435,17 +435,17 @@ Internet-Draft         SVCB well-known SvcParamKey        September 2026
               RFC 4033, DOI 10.17487/RFC4033, March 2005,
               <https://www.rfc-editor.org/rfc/rfc4033>.
 
+   [RFC7711]  Miller, M. and P. Saint-Andre, "PKIX over Secure HTTP
+              (POSH)", RFC 7711, DOI 10.17487/RFC7711, November 2015,
+              <https://www.rfc-editor.org/rfc/rfc7711>.
+
    [RFC9461]  Schwartz, B., "Service Binding Mapping for DNS Servers",
               RFC 9461, DOI 10.17487/RFC9461, November 2023,
               <https://www.rfc-editor.org/rfc/rfc9461>.
 
 
 
-
-
-
-
-Mozley & King             Expires 20 March 2027                 [Page 8]
+Mozley & King             Expires 28 March 2027                 [Page 8]
 
 Internet-Draft         SVCB well-known SvcParamKey        September 2026
 
@@ -501,4 +501,4 @@ Authors' Addresses
 
 
 
-Mozley & King             Expires 20 March 2027                 [Page 9]
+Mozley & King             Expires 28 March 2027                 [Page 9]

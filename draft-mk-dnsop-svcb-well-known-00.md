@@ -77,6 +77,14 @@ the well-known URI suffixes available at its endpoint, so a client can
 retrieve the resource it needs directly after resolution, without probing.
 Each DNS record in an RRset carries its own list, so a hosted endpoint or
 an alternative protocol can advertise different resources.
+This facilitates allowing entities establishing connections to network
+services to use the SvcParamValue in making connectivity decisions by
+indicating available resources.
+
+As protocols such as {{A2A}} can use different transport, or implementors
+may create custom protocol bindings to support different transport
+mechanisms or communication patterns, having "well-known" as an SvcParamKey
+supports this usage.
 
 The service parameter is defined here as a general primitive so that other
 specifications can reference it.
@@ -125,7 +133,7 @@ well-known="suffix[,suffix]*"
 The value is a comma-separated list of one or more suffixes, using the
 character-string and list escaping rules of Section 2.1 and Appendix A.1
 of {{RFC9460}}. Empty items and whitespace around separators are not
-allowed.
+allowed. A suffix MUST only appear once in the list.
 
 Each decoded suffix MUST match this ABNF {{RFC5234}}:
 
@@ -136,7 +144,8 @@ wk-suffix = segment-nz *( "/" segment )
 The segment-nz and segment rules are from Section 3.3 of {{RFC3986}}. A
 suffix does not begin with "/", does not include the "/.well-known/"
 prefix, and carries no query or fragment component. A suffix may extend
-below a registered well-known name where that registration allows it.
+below a registered well-known name where that registration allows it,
+such as {{?RFC7711}}.
 
 Non-ASCII characters MUST be percent-encoded. Invalid percent escapes and
 segments equal to "." or "..", including their percent-encoded forms,
@@ -240,8 +249,9 @@ not validate the suffix or the resource it names.
 
 Forged or hostile advertisements can induce unwanted requests or disclose
 client interests. Implementations SHOULD bound retrieval work rather than
-fetch every advertised resource. Publishing suffixes discloses information
-about a service; publishers SHOULD keep advertisements compact.
+fetch every advertised resource. Publishing suffixes disclose information
+about a service; publishers SHOULD keep advertisements compact and related
+to making connections to network services.
 
 # IANA Considerations
 
