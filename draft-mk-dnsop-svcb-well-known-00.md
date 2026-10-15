@@ -2,7 +2,7 @@
 title: "An SVCB Service Parameter for Well-Known URI Paths"
 abbrev: "SVCB well-known SvcParamKey"
 category: std
-docname: draft-mk-dnsop-svcb-well-known-00
+docname: draft-mk-dnsop-svcb-well-known-01
 submissiontype: IETF
 number:
 date:
@@ -86,6 +86,19 @@ may create custom protocol bindings to support different transport
 mechanisms or communication patterns, having "well-known" as an SvcParamKey
 supports this usage.
 
+In agent discovery, a client may not know which of several competing card
+formats an endpoint supports, so probing each possible well-known path adds
+multiple round trips at cold start.
+
+Example: supplier.webmesh.ai serves ten discovery paths across A2A, MCP, ANS,
+DID, Web Bot Auth, AI Catalog, UCP, and NANDA. Its SVCB record currently
+advertises none of them. A discovering client with no prior knowledge of this
+agent must either probe all ten paths or carry out-of-band knowledge of what
+the agent supports. Neither is cheap in terms of efficiency or maintenance.
+The well-known SvcParamKey eliminates that by making the DNS record
+self-describing: one field, resolved in the same query the client was already
+making.
+
 The service parameter is defined here as a general primitive so that other
 specifications can reference it.
 
@@ -93,7 +106,7 @@ o DNS for AI Discovery {{I-D.mozleywilliams-dnsop-dnsaid}} is one user of
 this parameter, advertising the location of an agent's capability
 descriptor.
 
-o [editors note] Authors will add other in progress work.
+o Editors note - Authors will add other in progress work.
 
 ## Requirements Notation
 
@@ -288,3 +301,9 @@ before publication.
    HTTPBIS before a renewed allocation request.
 
 --- back
+
+# Acknowledgments
+{:numbered="false"}
+
+The authors also would like to thank the following people for their
+contributions: Scott Courtney
