@@ -1,0 +1,42 @@
+idnits 3.1.0 (submission mode): 1 error, 6 warnings, 0 comments
+
+These results do not affect this submission.  Errors reported here are
+expected to prevent submission once idnits3 becomes a required check.
+
+Errors:
+
+   1. SUBMISSION_TYPE_UNEXPECTED
+      A document stream is specified in the rfc tag but the existing version has no stream on Datatracker. Is this intentional?
+      Path: rfc.submissionType
+      See https://www.rfc-editor.org/rfc/rfc7841.html
+
+Warnings:
+
+   2. LINE_PI
+      Document contains <?line 123?> processing instruction tags.
+
+   3. DEPRECATED_ELEMENT
+      The <list> element is deprecated. Instead, use <dl> for list/@style "hanging"; <ul> for list/@style "empty" or "symbols"; and <ol> for list/@style "letters", "numbers", "counter", or "format".
+      Path: rfc.middle.section[1].section[0].t[1].list
+      See https://www.rfc-editor.org/rfc/rfc7991.html#section-3.4
+
+   4. DEPRECATED_ELEMENT
+      The <texttable> element is deprecated. Use <table> instead.
+      Path: rfc.middle.section[5].texttable
+      See https://www.rfc-editor.org/rfc/rfc7991.html#section-3.8
+
+   5. DEPRECATED_ELEMENT
+      The <ttcol> element is deprecated. Instead, use <tr>, <td>, and <th>.
+      Path: rfc.middle.section[5].texttable.ttcol
+      See https://www.rfc-editor.org/rfc/rfc7991.html#section-3.9
+
+   6. DEPRECATED_ELEMENT
+      The <c> element is deprecated. Instead, use <tr>, <td>, and <th>.
+      Path: rfc.middle.section[5].texttable.c
+      See https://www.rfc-editor.org/rfc/rfc7991.html#section-3.1
+
+   7. DEPRECATED_ELEMENT
+      The <list> element is deprecated. Instead, use <dl> for list/@style "hanging"; <ul> for list/@style "empty" or "symbols"; and <ol> for list/@style "letters", "numbers", "counter", or "format".
+      Path: rfc.middle.section[6].t[1].list
+      See https://www.rfc-editor.org/rfc/rfc7991.html#section-3.4
+
