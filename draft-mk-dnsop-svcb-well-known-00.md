@@ -2,7 +2,7 @@
 title: "An SVCB Service Parameter for Well-Known URI Paths"
 abbrev: "SVCB well-known SvcParamKey"
 category: std
-docname: draft-mk-dnsop-svcb-well-known-00
+docname: draft-mk-dnsop-svcb-well-known-01
 submissiontype: IETF
 number:
 date:
@@ -77,6 +77,27 @@ the well-known URI suffixes available at its endpoint, so a client can
 retrieve the resource it needs directly after resolution, without probing.
 Each DNS record in an RRset carries its own list, so a hosted endpoint or
 an alternative protocol can advertise different resources.
+This facilitates allowing entities establishing connections to network
+services to use the SvcParamValue in making connectivity decisions by
+indicating available resources.
+
+As protocols such as {{A2A}} can use different transport, or implementors
+may create custom protocol bindings to support different transport
+mechanisms or communication patterns, having "well-known" as an SvcParamKey
+supports this usage.
+
+In agent discovery, a client may not know which of several competing card
+formats an endpoint supports, so probing each possible well-known path adds
+multiple round trips at cold start.
+
+Example: supplier.webmesh.ai serves ten discovery paths across A2A, MCP, ANS,
+DID, Web Bot Auth, AI Catalog, UCP, and NANDA. Its SVCB record currently
+advertises none of them. A discovering client with no prior knowledge of this
+agent must either probe all ten paths or carry out-of-band knowledge of what
+the agent supports. Neither is cheap in terms of efficiency or maintenance.
+The well-known SvcParamKey eliminates that by making the DNS record
+self-describing: one field, resolved in the same query the client was already
+making.
 
 The service parameter is defined here as a general primitive so that other
 specifications can reference it.
@@ -85,7 +106,7 @@ o DNS for AI Discovery {{I-D.mozleywilliams-dnsop-dnsaid}} is one user of
 this parameter, advertising the location of an agent's capability
 descriptor.
 
-o [editors note] Authors will add other in progress work.
+o Editors note - Authors will add other in progress work.
 
 ## Requirements Notation
 
@@ -125,7 +146,7 @@ well-known="suffix[,suffix]*"
 The value is a comma-separated list of one or more suffixes, using the
 character-string and list escaping rules of Section 2.1 and Appendix A.1
 of {{RFC9460}}. Empty items and whitespace around separators are not
-allowed.
+allowed. A suffix MUST only appear once in the list.
 
 Each decoded suffix MUST match this ABNF {{RFC5234}}:
 
@@ -136,7 +157,8 @@ wk-suffix = segment-nz *( "/" segment )
 The segment-nz and segment rules are from Section 3.3 of {{RFC3986}}. A
 suffix does not begin with "/", does not include the "/.well-known/"
 prefix, and carries no query or fragment component. A suffix may extend
-below a registered well-known name where that registration allows it.
+below a registered well-known name where that registration allows it,
+such as {{?RFC7711}}.
 
 Non-ASCII characters MUST be percent-encoded. Invalid percent escapes and
 segments equal to "." or "..", including their percent-encoded forms,
@@ -240,8 +262,9 @@ not validate the suffix or the resource it names.
 
 Forged or hostile advertisements can induce unwanted requests or disclose
 client interests. Implementations SHOULD bound retrieval work rather than
-fetch every advertised resource. Publishing suffixes discloses information
-about a service; publishers SHOULD keep advertisements compact.
+fetch every advertised resource. Publishing suffixes disclose information
+about a service; publishers SHOULD keep advertisements compact and related
+to making connections to network services.
 
 # IANA Considerations
 
@@ -278,3 +301,9 @@ before publication.
    HTTPBIS before a renewed allocation request.
 
 --- back
+
+# Acknowledgments
+{:numbered="false"}
+
+The authors also would like to thank the following people for their
+contributions: Scott Courtney
